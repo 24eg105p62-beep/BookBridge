@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+
+  # ── MySQL Database ─────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: bookbridge-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: bookbridge_db
+      MYSQL_USER: bookbridge
+      MYSQL_PASSWORD: bookbridge123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/sample-data.sql:/docker-entrypoint-initdb.d/02-data.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "bookbridge", "-pbookbridge123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bookbridge-net
+
+  # ── Spring Boot Backend ────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bookbridge-backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/bookbridge_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: bookbridge
+      SPRING_DATASOURCE_PASSWORD: bookbridge123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_PROFILES_ACTIVE: mysql
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    networks:
+      - bookbridge-net
+
+  # ── React Frontend (Nginx) ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    container_name: bookbridge-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - bookbridge-net
+
+volumes:
+  mysql_data:
+
+networks:
+  bookbridge-net:
+    driver: bridge

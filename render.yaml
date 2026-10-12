@@ -1,0 +1,22 @@
+services:
+  # Spring Boot Backend — deployed as a Web Service on Render
+  - type: web
+    name: bookbridge-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false          # set manually in Render dashboard
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+      - key: SPRING_PROFILES_ACTIVE
+        value: mysql
+      - key: SERVER_PORT
+        value: 8080
+    healthCheckPath: /api/auth/session

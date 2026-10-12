@@ -1,0 +1,21 @@
+# Compiled class files
+target/
+*.class
+
+# Node dependencies & build artifacts
+node_modules/
+dist/
+build/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Environment and logs
+*.log
+.env
+.DS_Store

@@ -1,18 +1,15 @@
 # ── Stage 1: Build the JAR ──────────────────────────────────────────────
-FROM eclipse-temurin:17-jdk-alpine AS builder
+FROM maven:3.9.6-eclipse-temurin-17-alpine AS builder
 
 WORKDIR /app
 
-# Copy Maven wrapper and pom first (better layer caching)
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-
-# Download dependencies only (cached unless pom.xml changes)
-RUN ./mvnw dependency:go-offline -B
+# Copy pom first for better layer caching (dependencies cached separately)
+COPY pom.xml ./
+RUN mvn dependency:go-offline -B
 
 # Copy source and build (skip tests during Docker build)
 COPY src ./src
-RUN ./mvnw package -DskipTests -B
+RUN mvn package -DskipTests -B
 
 # ── Stage 2: Minimal runtime image ──────────────────────────────────────
 FROM eclipse-temurin:17-jre-alpine
